@@ -15,5 +15,6 @@ unpickle <-
     }
 
     pickleDefinition <- unserialize(con)
+
     unpickle_(pickleDefinition)
   }

@@ -35,6 +35,6 @@ pickle <-
                 connection = con)
     } else {
       serialize(object = pickle_(object),
-                connection = NULL)
+                connection = NULL, xdr = FALSE, ascii = FALSE)
     }
   }

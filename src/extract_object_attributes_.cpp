@@ -5,16 +5,19 @@ using namespace Rcpp;
 List extract_object_attributes_ (RObject& object,
                                  std::unordered_map<String, RObject>& seenObjects,
                                  std::unordered_set<String>& seenAddresses) {
-  RObject strippedObject = strip_src_refs(object);
-  CharacterVector objectAttributeNames = wrap(strippedObject.attributeNames());
+
+  CharacterVector objectAttributeNames = wrap(object.attributeNames());
 
   int numberOfObjectAttributes = objectAttributeNames.size();
 
   List objectAttributeList (numberOfObjectAttributes);
 
+  String attributeName;
+  RObject attribute;
+
   for (int i = 0; i < numberOfObjectAttributes; i++) {
-    String attributeName = String(objectAttributeNames[i]);
-    RObject attribute = strippedObject.attr(attributeName);
+    attributeName = objectAttributeNames[i];
+    attribute = object.attr(attributeName);
     objectAttributeList[i] = pickle_tree_ (attribute, attributeName, seenObjects, seenAddresses, 1);
   }
 

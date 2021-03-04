@@ -80,10 +80,11 @@ RObject unpickle_tree_ (List& pickleDefinition,
     if (numberOfSubObjects > 0) {
 
       List subObjects (numberOfSubObjects);
+      List subObjectDefinition;
 
       for (int subObjectDefinitionIndex = 0; subObjectDefinitionIndex < numberOfSubObjects; subObjectDefinitionIndex++) {
 
-        List subObjectDefinition = subObjectDefinitions[subObjectDefinitionIndex];
+        subObjectDefinition = subObjectDefinitions[subObjectDefinitionIndex];
 
         subObjects[subObjectDefinitionIndex] = unpickle_tree_(subObjectDefinition, availableObjects, depth + 1);
       }
@@ -210,24 +211,29 @@ RObject unpickle_tree_ (List& pickleDefinition,
     // get elements of environment
     List subobjectDefinitions = pickleDefinition["subObjects"];
 
+    List subObjectDefinition, bindingFunctionDefinition;
+    String subObjectType;
+    String subObjectName;
+    SEXP bindingFunction;
+
     // loop through elements
     for (List::iterator subObjectDef = subobjectDefinitions.begin();
          subObjectDef != subobjectDefinitions.end(); subObjectDef++) {
 
-      List subObjectDefinition = *subObjectDef;
+      subObjectDefinition = *subObjectDef;
 
-      String subObjectType = subObjectDefinition["Type"];
+      subObjectType = as<String>(subObjectDefinition["Type"]);
 
       // if the element is an active binding
       if (subObjectType == "pickleEnvActiveBinding") {
 
         // get the function definition
-        List bindingFunctionDefinition = subObjectDefinition["FunctionDefinition"];
+        bindingFunctionDefinition = subObjectDefinition["FunctionDefinition"];
 
-        String subObjectName = bindingFunctionDefinition["objectLabel"];
+        subObjectName = as<String>(bindingFunctionDefinition["objectLabel"]);
 
         // unpickle the function definition
-        SEXP bindingFunction = unpickle_tree_(bindingFunctionDefinition, availableObjects, depth + 1);
+        bindingFunction = unpickle_tree_(bindingFunctionDefinition, availableObjects, depth + 1);
 
         Symbol bindingFunctionSymbol(subObjectName);
 
@@ -238,7 +244,7 @@ RObject unpickle_tree_ (List& pickleDefinition,
 
         // if element is a value unpickle and assign in environment
 
-        String subObjectName = subObjectDefinition["objectLabel"];
+        subObjectName = as<String>(subObjectDefinition["objectLabel"]);
 
         pickledEnv.assign(subObjectName, unpickle_tree_(subObjectDefinition, availableObjects, depth + 1));
       }

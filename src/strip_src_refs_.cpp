@@ -2,7 +2,6 @@
 using namespace Rcpp;
 
 RObject strip_src_refs(RObject object) {
-
   // if object is a closure grab body and strip
   if (TYPEOF(object) == CLOSXP) {
 
@@ -12,7 +11,7 @@ RObject strip_src_refs(RObject object) {
   }
 
   // if object is not a language type return
-  if (TYPEOF(object) != LANGSXP && TYPEOF(object) != EXPRSXP) {
+  if (TYPEOF(object) != LANGSXP) {
     return(object);
   }
 
@@ -25,6 +24,7 @@ RObject strip_src_refs(RObject object) {
   shalDuplicateObject.attr("srcfile") = R_NilValue;
 
   if (CAR(shalDuplicateObject) ==  Rf_install("function")) {
+
     SETCDR(CDR(CDR(shalDuplicateObject)), R_NilValue);
   }
 

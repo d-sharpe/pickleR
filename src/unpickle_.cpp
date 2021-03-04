@@ -5,19 +5,22 @@ using namespace Rcpp;
 // [[Rcpp::export]]
 RObject unpickle_ (List pickleDefinition) {
 
+  List pickledObjects = pickleDefinition["objects"];
+
   // create unordered map to hold unique objects
   std::unordered_map<String, RObject> availableObjects;
 
-  List pickledObjects = pickleDefinition["objects"];
-
   CharacterVector pickledObjectAddresses = pickledObjects.names();
 
-  for (CharacterVector::iterator objectAddress = pickledObjectAddresses.begin();
-       objectAddress != pickledObjectAddresses.end();
-       objectAddress++) {
+  int numberOfObjects = pickledObjectAddresses.length();
 
-    String currentObjectAddress = String(*objectAddress);
-    availableObjects.insert(std::pair<String, RObject>(currentObjectAddress, pickledObjects[currentObjectAddress]));
+  String currentObjectAddress;
+  RObject currentObject;
+  for (int i = 0; i < numberOfObjects; i++) {
+
+    currentObjectAddress = pickledObjectAddresses[i];
+    currentObject = pickledObjects[i];
+    availableObjects.insert(std::pair<String, RObject>(currentObjectAddress, currentObject));
   }
 
   List pickledObjectDefintion = pickleDefinition["pickleDefinition"];

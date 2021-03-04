@@ -9,11 +9,10 @@ List pickle_tree_(RObject& object,
                   std::unordered_set<String>& seenAddresses,
                   int depth = 1) {
 
-  RObject objectNoAttributes;
+  RObject objectNoAttributes, shallowObjectCopy;
 
   // grab object address
   String objectAddress = object_address_(object);
-
   // switch on type of SEXP object passed to function
   switch(TYPEOF(object)) {
   // if object is R NULL
@@ -80,10 +79,11 @@ List pickle_tree_(RObject& object,
         listObjectNames = wrap(object.attr("names"));
       }
 
+      RObject listElement;
       // loop over each list element and recursively pickle
       for (R_xlen_t i = 0; i < listObjectLength; i++) {
 
-        RObject listElement = VECTOR_ELT(object, i);
+        listElement = VECTOR_ELT(object, i);
 
         pickledSubObjects[i] = pickle_tree_(listElement, listObjectNames[i], seenObjects, seenAddresses, depth + 1);
       }
@@ -98,13 +98,31 @@ List pickle_tree_(RObject& object,
     break;
   case SYMSXP:
     case EXPRSXP:
-      case LANGSXP:
+      // copy the object and strip all attributes from it for saving
+      // in the unique object map
+      // attributes will be saved as "pickleAttributes" on pickleDefiniton
+      // for reapplication during unpickle
+      objectNoAttributes = strip_object_attributes_(object);
+      // try insert object via address into unique object map
+      if (!seenObjects.insert(std::pair<String, RObject>(objectAddress, objectNoAttributes)).second) {
+        // return a pickleReference to existing object in map
+        return(List::create(_["objectLabel"] = objectLabel,
+                            _["objectAddress"] = objectAddress,
+                            _["Type"] = "pickleReference"));
+      } else {
+        // return a pickle indicating the object details
+        return(List::create(_["objectLabel"] = objectLabel,
+                            _["objectAddress"] = objectAddress,
+                            _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses),
+                            _["Type"] = "pickle"));
+      }
+      break;
+  case LANGSXP:
         // copy the object and strip all attributes from it for saving
         // in the unique object map
         // attributes will be saved as "pickleAttributes" on pickleDefiniton
         // for reapplication during unpickle
         objectNoAttributes = strip_object_attributes_(object);
-
         // try insert object via address into unique object map
         if (!seenObjects.insert(std::pair<String, RObject>(objectAddress, objectNoAttributes)).second) {
           // return a pickleReference to existing object in map
@@ -112,10 +130,15 @@ List pickle_tree_(RObject& object,
                               _["objectAddress"] = objectAddress,
                               _["Type"] = "pickleReference"));
         } else {
+
+          shallowObjectCopy = Rf_shallow_duplicate(object);
+
+          shallowObjectCopy = strip_src_refs(shallowObjectCopy);
+
           // return a pickle indicating the object details
           return(List::create(_["objectLabel"] = objectLabel,
                               _["objectAddress"] = objectAddress,
-                              _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses),
+                              _["objectAttributes"] = extract_object_attributes_(shallowObjectCopy, seenObjects, seenAddresses),
                               _["Type"] = "pickle"));
         }
 
@@ -142,7 +165,7 @@ List pickle_tree_(RObject& object,
     // if the object is a package or namespace environment save a reference to
     // that environment
     if (R_IsPackageEnv(object)) {
-      String package_name = String(R_PackageEnvName(object));
+      String package_name = R_PackageEnvName(object);
 
       return(List::create(_["objectLabel"] = objectLabel,
                           _["Namespace"] = package_name,
@@ -150,7 +173,7 @@ List pickle_tree_(RObject& object,
     }
 
     if (R_IsNamespaceEnv(object)) {
-      String package_name = String(R_NamespaceEnvSpec(object));
+      String package_name = R_NamespaceEnvSpec(object);
 
       return(List::create(_["objectLabel"] = objectLabel,
                           _["Namespace"] = package_name,
@@ -235,10 +258,14 @@ List pickle_tree_(RObject& object,
       RObject objectFormals = FORMALS(object);
       RObject objectBody = BODY(object);
 
+      shallowObjectCopy = Rf_shallow_duplicate(object);
+
+      shallowObjectCopy = strip_src_refs(shallowObjectCopy);
+
       // pickle the elements that compose the function and return
       return(List::create(_["objectLabel"] = objectLabel,
                           _["objectAddress"] = objectAddress,
-                          _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses),
+                          _["objectAttributes"] = extract_object_attributes_(shallowObjectCopy, seenObjects, seenAddresses),
                           _["objectEnvironment"] = pickle_tree_(objectEnclosingEnvironment, "", seenObjects, seenAddresses, depth + 1),
                           _["objectFormals"] = pickle_tree_(objectFormals, "", seenObjects, seenAddresses,  depth + 1),
                           _["objectBody"] = pickle_tree_(objectBody, "", seenObjects, seenAddresses,  depth + 1),

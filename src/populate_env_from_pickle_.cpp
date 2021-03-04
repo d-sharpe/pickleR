@@ -10,26 +10,27 @@ void populate_env_from_pickle_(RObject& environment,
 
   Environment envToPopulate = as<Environment>(environment);
 
-  if (!pickleDefinition.containsElementNamed("subObjects")) {
-    print(pickleDefinition);
-  }
-
   List subobjectDefinitions = pickleDefinition["subObjects"];
+
+  List subObjectDefinition, bindingFunctionDefinition;
+  String subObjectType;
+  String subObjectName;
+  SEXP bindingFunction;
 
   for (List::iterator subObjectDef = subobjectDefinitions.begin();
        subObjectDef != subobjectDefinitions.end(); subObjectDef++) {
 
-    List subObjectDefinition = *subObjectDef;
+    subObjectDefinition = *subObjectDef;
 
-    String subObjectType = subObjectDefinition["Type"];
+    subObjectType = as<String>(subObjectDefinition["Type"]);
 
     if (subObjectType == "pickleEnvActiveBinding") {
 
-      List bindingFunctionDefinition = subObjectDefinition["FunctionDefinition"];
+      bindingFunctionDefinition = subObjectDefinition["FunctionDefinition"];
 
-      String subObjectName = bindingFunctionDefinition["objectLabel"];
+      subObjectName = as<String>(bindingFunctionDefinition["objectLabel"]);
 
-      SEXP bindingFunction = unpickle_tree_(bindingFunctionDefinition, availableObjects, depth + 1);
+      bindingFunction = unpickle_tree_(bindingFunctionDefinition, availableObjects, depth + 1);
 
       Symbol bindingFunctionSymbol(subObjectName);
 
@@ -37,7 +38,7 @@ void populate_env_from_pickle_(RObject& environment,
 
     } else {
 
-      String subObjectName = subObjectDefinition["objectLabel"];
+      subObjectName = as<String>(subObjectDefinition["objectLabel"]);
 
       envToPopulate.assign(subObjectName, unpickle_tree_(subObjectDefinition, availableObjects, depth + 1));
     }

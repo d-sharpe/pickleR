@@ -12,8 +12,10 @@ RObject strip_object_attributes_ (RObject& object) {
 
   int numberOfObjectAttributes = objectAttributeNames.size();
 
+  String attributeName;
+
   for (int i = 0; i < numberOfObjectAttributes; i++) {
-    String attributeName = String(objectAttributeNames[i]);
+    attributeName = objectAttributeNames[i];
     shalDuplicateObject.attr(attributeName) = R_NilValue;
   }
 
