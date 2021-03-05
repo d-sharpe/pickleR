@@ -6,7 +6,7 @@
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/d-sharpe/pickleR/workflows/R-CMD-check/badge.svg)](https://github.com/d-sharpe/pickleR/actions)
-[![test-coverage](https://github.com/d-sharpe/pickleR/workflows/test-coverage/badge.svg)](https://github.com/d-sharpe/pickleR/actions)
+[![test-coverage](https://codecov.io/gh/d-sharpe/pickleR/branch/master/graph/badge.svg?token=5WSPCOJ0EF)](https://codecov.io/gh/d-sharpe/pickleR)
 <!-- badges: end -->
 
 *pickleR* provides for the serializing and de-serializing of an R object
@@ -29,7 +29,7 @@ You can install the development version from
 devtools::install_github("d-sharpe/pickleR")
 ```
 
-## Usage
+## Example
 
 ``` r
 library(pickleR)
@@ -39,7 +39,7 @@ valueVector <- rnorm(1000)
 
 ## memory address of vector
 obj_addr(valueVector)
-#> [1] "0x564635cdfef0"
+#> [1] "0x56489ef30c70"
 
 ## object memory size
 obj_size(valueVector)
@@ -53,9 +53,9 @@ listOfValues <-
 ## original valueVector
 
 lobstr::sxp(x = listOfValues)
-#> [1:0x564635271908] <VECSXP[2]> (named:4)
-#>   [2:0x564635cdfef0] <REALSXP[1000]> (named:6)
-#>   [2:0x564635cdfef0]
+#> [1:0x5648a028a908] <VECSXP[2]> (named:4)
+#>   [2:0x56489ef30c70] <REALSXP[1000]> (named:6)
+#>   [2:0x56489ef30c70]
 
 ## listOfValues memory size
 obj_size(listOfValues)
@@ -68,9 +68,9 @@ RListOfValues <-
 ## reference were not maintained
 
 lobstr::sxp(x = RListOfValues)
-#> [1:0x5646343b33d8] <VECSXP[2]> (named:4)
-#>   [2:0x564636f0f810] <REALSXP[1000]> (named:1)
-#>   [3:0x564636ce87d0] <REALSXP[1000]> (named:1)
+#> [1:0x56489f3cc3d8] <VECSXP[2]> (named:4)
+#>   [2:0x5648a0ba9df0] <REALSXP[1000]> (named:1)
+#>   [3:0x5648a22e75d0] <REALSXP[1000]> (named:1)
 
 ## RListOfValues memory size
 obj_size(RListOfValues)
@@ -85,9 +85,9 @@ pickleListOfValues <-
 ## address i.e. shared object
 
 lobstr::sxp(x = pickleListOfValues)
-#> [1:0x5646366b4dd8] <VECSXP[2]> (named:10)
-#>   [2:0x5646372ac090] <REALSXP[1000]> (named:9)
-#>   [2:0x5646372ac090]
+#> [1:0x5648a16cde98] <VECSXP[2]> (named:10)
+#>   [2:0x5648a13840e0] <REALSXP[1000]> (named:9)
+#>   [2:0x5648a13840e0]
 
 ## pickleListOfValues memory size
 obj_size(pickleListOfValues)

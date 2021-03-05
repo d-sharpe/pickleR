@@ -1,6 +1,6 @@
 #include <Rcpp.h>
 #include <Rinternals.h>
-#include "unpickle_funs.hpp"
+#include "unpickle_funs.h"
 using namespace Rcpp;
 
 RObject unpickle_tree_ (List& pickleDefinition,

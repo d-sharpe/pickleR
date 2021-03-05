@@ -1,12 +1,12 @@
 Package: pickleR
 Type: Package
-Title: Serialization and De-serialization of R objects with reference maintenance
-Version: 0.0.0.9000
+Title: Serialization and De-Serialization of R Objects with Reference Maintenance
+Version: 0.0.1
 Date: 2021-02-23
 Authors@R: person("Daniel", "Sharpe", role = c("aut", "cre"), email = "daniel.sharpe@exploristics.com")
 Description: Allows serialization and de-serialization of objects with internal
     references to shared or recursive objects, maintaining those references in restored objects.
-License: GPL (>= 2)
+License: GPL (>= 3)
 Imports: 
     Rcpp
 LinkingTo: Rcpp
@@ -16,6 +16,7 @@ Suggests:
     testthat (>= 3.0.0),
     pryr (>= 0.1.4),
     knitr,
-    rmarkdown
+    rmarkdown,
+    R6
 VignetteBuilder: knitr
 Config/testthat/edition: 3

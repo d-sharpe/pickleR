@@ -1,6 +1,6 @@
 #include <Rcpp.h>
 #include <Rinternals.h>
-#include "unpickle_funs.hpp"
+#include "unpickle_funs.h"
 using namespace Rcpp;
 
 void populate_env_from_pickle_(RObject& environment,

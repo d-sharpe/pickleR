@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include "pickle_funs.hpp"
+#include "pickle_funs.h"
 using namespace Rcpp;
 
 

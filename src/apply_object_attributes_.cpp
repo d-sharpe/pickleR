@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include "unpickle_funs.hpp"
+#include "unpickle_funs.h"
 using namespace Rcpp;
 
 void apply_object_attributes_(RObject& object,

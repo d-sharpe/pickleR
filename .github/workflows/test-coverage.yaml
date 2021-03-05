@@ -44,5 +44,7 @@ jobs:
         shell: Rscript {0}
 
       - name: Test coverage
+        env: # Or as an environment variable
+          super_secret: ${{ secrets.SuperSecret }}
         run: covr::codecov()
         shell: Rscript {0}

@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/d-sharpe/pickleR/workflows/R-CMD-check/badge.svg)](https://github.com/d-sharpe/pickleR/actions)
-[![test-coverage](https://github.com/d-sharpe/pickleR/workflows/test-coverage/badge.svg)](https://github.com/d-sharpe/pickleR/actions)
+[![test-coverage](https://codecov.io/gh/d-sharpe/pickleR/branch/master/graph/badge.svg?token=5WSPCOJ0EF)](https://codecov.io/gh/d-sharpe/pickleR)
 <!-- badges: end -->
 
 *pickleR* provides for the serializing and de-serializing of an R object structure,
