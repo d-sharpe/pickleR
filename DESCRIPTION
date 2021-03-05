@@ -4,8 +4,8 @@ Title: Serialization and De-serialization of R objects with reference maintenanc
 Version: 0.0.0.9000
 Date: 2021-02-23
 Authors@R: person("Daniel", "Sharpe", role = c("aut", "cre"), email = "daniel.sharpe@exploristics.com")
-Description: Allows serialization and unserialization of objects with internal
-    references to shared objects, maintaining those references in restored objects.
+Description: Allows serialization and de-serialization of objects with internal
+    references to shared or recursive objects, maintaining those references in restored objects.
 License: GPL (>= 2)
 Imports: 
     Rcpp

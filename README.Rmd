@@ -1,0 +1,91 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# pickleR
+
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/d-sharpe/pickleR/workflows/R-CMD-check/badge.svg)](https://github.com/d-sharpe/pickleR/actions)
+[![test-coverage](https://github.com/d-sharpe/pickleR/workflows/test-coverage/badge.svg)](https://github.com/d-sharpe/pickleR/actions)
+<!-- badges: end -->
+
+*pickleR* provides for the serializing and de-serializing of an R object structure,
+similar to that seen in the Python module [pickle](https://docs.python.org/3/library/pickle.html).
+*pickleR* traverses the object hierarchy, keeping track of any sub-objects it has already encountered
+so that they will not be stored again. Therefore, recursive, nested and shared objects are handled by *pickleR*.
+
+The unpickling process reconstitutes the object with shared objects and recursions intact.
+
+
+## Installation
+
+You can install the development version from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("d-sharpe/pickleR")
+```
+
+## Example
+
+```{r example}
+library(pickleR)
+library(lobstr)
+
+valueVector <- rnorm(1000)
+
+## memory address of vector
+obj_addr(valueVector)
+
+## object memory size
+obj_size(valueVector)
+
+listOfValues <-
+  list(valueVector,
+       valueVector)
+
+## Each element of the listOfValues points to the same memory address of the
+## original valueVector
+
+lobstr::sxp(x = listOfValues)
+
+## listOfValues memory size
+obj_size(listOfValues)
+
+RListOfValues <-
+  unserialize(serialize(listOfValues, connection = NULL))
+
+## Each element of the RListOfValues points to a new vector i.e. shared object
+## reference were not maintained
+
+lobstr::sxp(x = RListOfValues)
+
+## RListOfValues memory size
+obj_size(RListOfValues)
+
+# The serialized object consumes more memory than the original
+
+pickleListOfValues <-
+  unpickle(pickle(listOfValues))
+
+## Each element of the pickleListOfValues points to the same memory 
+## address i.e. shared object
+
+lobstr::sxp(x = pickleListOfValues)
+
+## pickleListOfValues memory size
+obj_size(pickleListOfValues)
+
+# The pickled object consumes the same memory as the original
+```
