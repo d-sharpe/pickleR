@@ -16,7 +16,7 @@ void apply_object_attributes_(RObject& object,
   if (numberOfAttributes > 0) {
     // allocate attribute name
     String attributeName;
-    // allocate attribute defintion list i.e. a pickle definition
+    // allocate attribute definition list i.e. a pickle definition
     List attributeDefinition;
 
     for (int i = 0; i < numberOfAttributes; i++) {
@@ -34,15 +34,17 @@ void apply_object_attributes_(List& object,
                               List& attributes,
                               std::unordered_map<String, RObject>& availableObjects,
                               int depth) {
-
+  // extract list of attributes
   List attributeListToApply = attributes["Attributes"];
 
+  // get number of attributes for loop
   int numberOfAttributes = attributeListToApply.length();
 
+  // only loop if there are attributes
   if (numberOfAttributes > 0) {
-
+    // allocate attribute name
     String attributeName;
-
+    // allocate attribute definition list i.e. a pickle definition
     List attributeDefinition;
 
     for (int i = 0; i < numberOfAttributes; i++) {
@@ -51,6 +53,7 @@ void apply_object_attributes_(List& object,
 
       attributeName = as<String>(attributeDefinition["objectLabel"]);
 
+      // unpickle the attribute and save to object
       object.attr(attributeName) = unpickle_tree_(attributeDefinition, availableObjects, depth + 1);
     }
   }

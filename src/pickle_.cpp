@@ -12,10 +12,25 @@ List pickle_ (RObject object) {
   // to store the object for directly i.e. a list
   std::unordered_set<String> seenAddresses;
 
+  // create unordered set to hold seen package environments that will be required
+  // to recreate the object
+  std::unordered_set<String> requiredPackages;
+
   // recurse through object tree pickling objects as we go
-  List pickledObjectDefinition = pickle_tree_(object, "", seenObjects, seenAddresses, 1);
+  List pickledObjectDefinition = pickle_tree_(object, "", seenObjects, seenAddresses, requiredPackages, 1);
+
+  int numberOfRequiredPackages = requiredPackages.size();
+  CharacterVector requiredPackageNames(numberOfRequiredPackages);
+
+  std::unordered_set<String>::const_iterator currentPackage = requiredPackages.begin(),
+    lastPackage = requiredPackages.end();
+
+  for (int i = 0; currentPackage != lastPackage; currentPackage++, i++) {
+    requiredPackageNames[i] = *currentPackage;
+  }
 
   // return the pickleDefinition
   return(List::create(_["objects"] = seenObjects,
+                      _["requiredPackages"] = requiredPackageNames,
                       _["pickleDefinition"] = pickledObjectDefinition));
 }

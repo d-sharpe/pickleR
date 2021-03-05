@@ -31,9 +31,9 @@ RObject unpickle_tree_ (List& pickleDefinition,
   // return that package environment
   if (pickleType == "picklePackageEnv" || pickleType == "pickleNamespaceEnv") {
     String namespaceName = pickleDefinition["Namespace"];
-    Environment namespaceRegistry = R_NamespaceRegistry;
+    Environment packageEnv = Environment::namespace_env(namespaceName);
 
-    return(namespaceRegistry.get(namespaceName));
+    return(as<RObject>(packageEnv));
   }
 
   // if is pickle NULL type return a R NULL

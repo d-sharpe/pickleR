@@ -7,6 +7,7 @@ List pickle_tree_(RObject& object,
                   String objectLabel,
                   std::unordered_map<String, RObject>& seenObjects,
                   std::unordered_set<String>& seenAddresses,
+                  std::unordered_set<String>& requiredPackages,
                   int depth = 1) {
 
   RObject objectNoAttributes, shallowObjectCopy;
@@ -18,7 +19,7 @@ List pickle_tree_(RObject& object,
   // if object is R NULL
   case NILSXP:
     return(List::create(_["objectLabel"] = objectLabel,
-                        _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses),
+                        _["objectAttributes"] = extract_object_attributes_(object, seenObjects, requiredPackages, seenAddresses),
                         _["Type"] = "pickleNULL"));
     break;
 
@@ -46,7 +47,7 @@ List pickle_tree_(RObject& object,
                 } else {
                   // return a pickle indicating the object details
                   return(List::create(_["objectLabel"] = objectLabel,
-                                      _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses),
+                                      _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses, requiredPackages),
                                       _["objectAddress"] = objectAddress,
                                       _["Type"] = "pickle"));
                 }
@@ -85,12 +86,12 @@ List pickle_tree_(RObject& object,
 
         listElement = VECTOR_ELT(object, i);
 
-        pickledSubObjects[i] = pickle_tree_(listElement, listObjectNames[i], seenObjects, seenAddresses, depth + 1);
+        pickledSubObjects[i] = pickle_tree_(listElement, listObjectNames[i], seenObjects, seenAddresses, requiredPackages, depth + 1);
       }
 
       return(List::create(_["objectLabel"] = objectLabel,
                           _["objectAddress"] = objectAddress,
-                          _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses),
+                          _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses, requiredPackages),
                           _["subObjects"] = pickledSubObjects,
                           _["Type"] = "pickleList"));
 
@@ -113,7 +114,7 @@ List pickle_tree_(RObject& object,
         // return a pickle indicating the object details
         return(List::create(_["objectLabel"] = objectLabel,
                             _["objectAddress"] = objectAddress,
-                            _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses),
+                            _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses, requiredPackages),
                             _["Type"] = "pickle"));
       }
       break;
@@ -138,7 +139,7 @@ List pickle_tree_(RObject& object,
           // return a pickle indicating the object details
           return(List::create(_["objectLabel"] = objectLabel,
                               _["objectAddress"] = objectAddress,
-                              _["objectAttributes"] = extract_object_attributes_(shallowObjectCopy, seenObjects, seenAddresses),
+                              _["objectAttributes"] = extract_object_attributes_(shallowObjectCopy, seenObjects, seenAddresses, requiredPackages),
                               _["Type"] = "pickle"));
         }
 
@@ -167,6 +168,8 @@ List pickle_tree_(RObject& object,
     if (R_IsPackageEnv(object)) {
       String package_name = R_PackageEnvName(object);
 
+      requiredPackages.insert(package_name);
+
       return(List::create(_["objectLabel"] = objectLabel,
                           _["Namespace"] = package_name,
                           _["Type"] = "picklePackageEnv"));
@@ -174,6 +177,8 @@ List pickle_tree_(RObject& object,
 
     if (R_IsNamespaceEnv(object)) {
       String package_name = R_NamespaceEnvSpec(object);
+
+      requiredPackages.insert(package_name);
 
       return(List::create(_["objectLabel"] = objectLabel,
                           _["Namespace"] = package_name,
@@ -196,7 +201,7 @@ List pickle_tree_(RObject& object,
       RObject parentEnvironment = as<RObject>(objectAsEnvironment.parent());
 
       // pickle the parent environment
-      List parentEnvironmentPickleDefinition = pickle_tree_(parentEnvironment, "", seenObjects, seenAddresses, depth + 1);
+      List parentEnvironmentPickleDefinition = pickle_tree_(parentEnvironment, "", seenObjects, seenAddresses, requiredPackages, depth + 1);
 
       // get the names of all (inc elements starting with ".") elements in environment
       CharacterVector objectAsEnvElementNames = objectAsEnvironment.ls(true);
@@ -221,14 +226,14 @@ List pickle_tree_(RObject& object,
 
           environmentElement = objectAsEnvironment.get(elementName);
 
-          pickledSubObjects[i] = pickle_tree_(environmentElement, elementName, seenObjects, seenAddresses, depth + 1);
+          pickledSubObjects[i] = pickle_tree_(environmentElement, elementName, seenObjects, seenAddresses, requiredPackages, depth + 1);
         } else {
 
           // if the element is an active binding get the bound function definition and pickle that
 
           environmentElement = get_binding_function_(elementName, objectAsEnvironment);
 
-          pickledActiveBindingEnvironmentElement = pickle_tree_(environmentElement, elementName, seenObjects, seenAddresses, depth + 1);
+          pickledActiveBindingEnvironmentElement = pickle_tree_(environmentElement, elementName, seenObjects, seenAddresses, requiredPackages, depth + 1);
 
           pickledSubObjects[i] = List::create(_["FunctionDefinition"] = pickledActiveBindingEnvironmentElement,
                                               _["Type"] = "pickleEnvActiveBinding");
@@ -237,7 +242,7 @@ List pickle_tree_(RObject& object,
 
       return(List::create(_["objectLabel"] = objectLabel,
                           _["objectAddress"] = objectAddress,
-                          _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses),
+                          _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses, requiredPackages),
                           _["parentEnv"] = parentEnvironmentPickleDefinition,
                           _["subObjects"] = pickledSubObjects,
                           _["Type"] = "pickleEnv"));
@@ -265,10 +270,10 @@ List pickle_tree_(RObject& object,
       // pickle the elements that compose the function and return
       return(List::create(_["objectLabel"] = objectLabel,
                           _["objectAddress"] = objectAddress,
-                          _["objectAttributes"] = extract_object_attributes_(shallowObjectCopy, seenObjects, seenAddresses),
-                          _["objectEnvironment"] = pickle_tree_(objectEnclosingEnvironment, "", seenObjects, seenAddresses, depth + 1),
-                          _["objectFormals"] = pickle_tree_(objectFormals, "", seenObjects, seenAddresses,  depth + 1),
-                          _["objectBody"] = pickle_tree_(objectBody, "", seenObjects, seenAddresses,  depth + 1),
+                          _["objectAttributes"] = extract_object_attributes_(shallowObjectCopy, seenObjects, seenAddresses, requiredPackages),
+                          _["objectEnvironment"] = pickle_tree_(objectEnclosingEnvironment, "", seenObjects, seenAddresses, requiredPackages, depth + 1),
+                          _["objectFormals"] = pickle_tree_(objectFormals, "", seenObjects, seenAddresses, requiredPackages,  depth + 1),
+                          _["objectBody"] = pickle_tree_(objectBody, "", seenObjects, seenAddresses, requiredPackages,  depth + 1),
                           _["Type"] = "pickleFunction"));
     }
 
@@ -290,7 +295,7 @@ List pickle_tree_(RObject& object,
       // return a pickle indicating the object details
       return(List::create(_["objectLabel"] = objectLabel,
                           _["objectAddress"] = objectAddress,
-                          _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses),
+                          _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses, requiredPackages),
                           _["Type"] = "pickle"));
     }
     break;
@@ -316,7 +321,7 @@ List pickle_tree_(RObject& object,
       // return a pickle indicating the object details
       return(List::create(_["objectLabel"] = objectLabel,
                           _["objectAddress"] = objectAddress,
-                          _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses),
+                          _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses, requiredPackages),
                           _["Type"] = "pickle"));
     }
   }

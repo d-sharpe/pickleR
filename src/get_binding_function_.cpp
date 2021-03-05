@@ -2,9 +2,6 @@
 #include <Rinternals.h>
 using namespace Rcpp ;
 
-#define HASHSIZE(x)     LENGTH(x)
-#define HASHVALUE(x)    TRUELENGTH(x)
-
 SEXP get_binding_function_ (String name, Environment& environment) {
   SEXP symbol = Rf_install( name.get_cstring());
   SEXP env = environment;

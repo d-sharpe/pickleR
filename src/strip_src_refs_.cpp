@@ -10,6 +10,14 @@ RObject strip_src_refs(RObject object) {
     return(strip_src_refs(objectBody));
   }
 
+  if (TYPEOF(object) == EXPRSXP) {
+
+    List expression = as<List>(object);
+    RObject expressionBody = expression[0];
+    expression[0] = strip_src_refs(expressionBody);
+    object = as<RObject>(expression);
+  }
+
   // if object is not a language type return
   if (TYPEOF(object) != LANGSXP) {
     return(object);
