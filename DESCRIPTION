@@ -15,8 +15,5 @@ Encoding: UTF-8
 Suggests: 
     testthat (>= 3.0.0),
     pryr (>= 0.1.4),
-    knitr,
-    rmarkdown,
     R6
-VignetteBuilder: knitr
 Config/testthat/edition: 3
