@@ -19,24 +19,24 @@ pickle <-
     if (!is.null(connection)) {
       if (is.character(connection)) {
         con <- if (is.logical(compress)) {
-          if (compress) {
+          if (isTRUE(compress)) {
             gzfile(connection, open = "wb", ...)
           } else {
             file(connection, open = "wb", ...)
           }
         } else {
           switch(
-            compress,
-            bzip2 = bzfile(connection, open = "wb", ...),
-            xz = xzfile(connection,
+            as.character(compress),
+            "bzip2" = bzfile(connection, open = "wb", ...),
+            "xz" = xzfile(connection,
                         open = "wb", ...),
-            gzip = gzfile(connection, open = "wb", ...),
-            stop("invalid 'compress' argument: ",
+            "gzip" = gzfile(connection, open = "wb", ...),
+            stop("Invalid 'compress' argument: ",
                  compress)
           )
         }
 
-        on.exit(close(con))
+        on.exit({close(con)}, add = TRUE)
       } else {
         con <- connection
       }

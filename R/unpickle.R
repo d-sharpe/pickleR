@@ -12,18 +12,43 @@ unpickle <-
   function(connection, ...) {
     # Setup connection to file if passed
     if (is.character(connection)) {
+      if (!file.exists(connection)) {
+        stop("Specified file does not exist: ", connection)
+      }
+      file.info(connection)
+
       con <- gzfile(connection, "rb", ...)
-      on.exit(close(con))
+      on.exit({
+        close(con)
+      }, add = TRUE)
     } else if (inherits(connection, "connection"))  {
       if (inherits(connection, "url")) {
         con <- gzcon(connection, ...)
-        on.exit(close(con))
+        on.exit({
+          close(con)
+        }, add = TRUE)
       }
     } else {
       con <- connection
     }
 
     pickleDefinition <- unserialize(con)
+
+    if (!is(pickleDefinition, "pickleDefinition")) {
+      stop("Specified connection does not contain a valid pickle definition")
+    }
+
+    if (length(pickleDefinition[["requiredPackages"]])) {
+      unavailablePackages <-
+        !(pickleDefinition[["requiredPackages"]] %in% installed.packages()[, 1])
+
+      if (any(unavailablePackages)) {
+        stop(
+          "Some dependencies are not available: ",
+          paste0(pickleDefinition[["requiredPackages"]][unavailablePackages], collapse = ", ")
+        )
+      }
+    }
 
     unpickle_(pickleDefinition)
   }

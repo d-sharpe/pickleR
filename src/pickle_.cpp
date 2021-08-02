@@ -29,8 +29,13 @@ List pickle_ (RObject object) {
     requiredPackageNames[i] = *currentPackage;
   }
 
+  // create the pickleDefintion list
+  List pickleDefinition = List::create(_["objects"] = seenObjects,
+                                       _["requiredPackages"] = requiredPackageNames,
+                                       _["pickleDefinition"] = pickledObjectDefinition);
+
+  pickleDefinition.attr("class") = "pickleDefinition";
+
   // return the pickleDefinition
-  return(List::create(_["objects"] = seenObjects,
-                      _["requiredPackages"] = requiredPackageNames,
-                      _["pickleDefinition"] = pickledObjectDefinition));
+  return(pickleDefinition);
 }

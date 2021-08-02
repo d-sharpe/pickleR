@@ -7,13 +7,17 @@ Authors@R: person("Daniel", "Sharpe", role = c("aut", "cre"), email = "daniel.sh
 Description: Allows serialization and de-serialization of objects with internal
     references to shared or recursive objects, maintaining those references in restored objects.
 License: GPL (>= 3)
+Depends:
+    R (>= 4.0.5)
 Imports: 
     Rcpp
 LinkingTo: Rcpp
 RoxygenNote: 7.1.1
 Encoding: UTF-8
 Suggests: 
-    testthat (>= 3.0.0),
-    pryr (>= 0.1.4),
-    R6
+    testthat (>= 3.0.4),
+    lobstr (>= 1.1.1),
+    rmarkdown (>= 2.9),
+    knitr (>= 1.33)
 Config/testthat/edition: 3
+VignetteBuilder: knitr
