@@ -2,5 +2,7 @@
 
 export(pickle)
 export(unpickle)
+importFrom('methods','is')
+importFrom('utils','installed.packages')
 importFrom(Rcpp,sourceCpp)
 useDynLib(pickleR, .registration = TRUE)

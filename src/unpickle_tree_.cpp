@@ -189,6 +189,16 @@ RObject unpickle_tree_ (List& pickleDefinition,
       populate_env_from_pickle_(functionEnv, functionEnvInfo, availableObjects, depth + 1);
     }
 
+    Environment functionEnvironment = as<Environment>(functionEnv);
+
+    // get the parent environment definition
+    bool environmentIsLocked = functionEnvInfo.containsElementNamed("environmentIsLocked") &&
+      functionEnvInfo["environmentIsLocked"];
+
+    if (environmentIsLocked) {
+      functionEnvironment.lock();
+    }
+
     return(unpickledFunction);
   }
 
@@ -249,6 +259,16 @@ RObject unpickle_tree_ (List& pickleDefinition,
         pickledEnv.assign(subObjectName, unpickle_tree_(subObjectDefinition, availableObjects, depth + 1));
       }
     }
+
+    // get the parent environment definition
+    bool environmentIsLocked = pickleDefinition.containsElementNamed("environmentIsLocked") &&
+      pickleDefinition["environmentIsLocked"];
+
+    if (environmentIsLocked) {
+      pickledEnv.lock();
+    }
+
+    if (pickleDefinition)
 
     // convert environment to RObject and apply attributes
     object = as<RObject>(pickledEnv);

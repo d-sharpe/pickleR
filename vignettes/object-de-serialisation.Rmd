@@ -10,93 +10,131 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
+  eval = TRUE,
+  cache = FALSE,
   comment = "#>"
 )
 ```
 
-```{r setup}
-library(pickleR)
-```
+*pickleR* is an alternative to the in-built `serialize` and `unserialize` functions. When an object is serialized and subsequently deserialized using these functions, the intra-object references to the same element are usually not wholly perserved (weak references may be maintained). The most obvious effect of this for simple objects (e.g. lists) is an increased object memory footprint of the restored object compared to the original.
+
+## Built-in serialize of simple objects
 
 Consider the following example:
 
 ```{r}
-x <- 1:100
+integerVector <- runif(10000)
 
-list_of_x <- list(x, x, x)
+listOfIntegerVectors <- list(integerVector, integerVector, integerVector)
+
+library(lobstr)
+
+obj_addr(integerVector)
+
+sxp(listOfIntegerVectors)
 ```
 
-Each element of `list_of_x` points to the same memory address of `x`.
+Each element of `listOfIntegerVectors` points to the same memory address, which is that of `integerVector`.
+
+And we can see that the memory footprint of the `listOfIntegerVectors` is the almost the same as the `integerVector`. In this case 80 Bytes is consumed by the list structure.
 
 ```{r}
-library(pryr)
+obj_size(integerVector)
 
-pryr::inspect(x)
-
-pryr::inspect(list_of_x)
+obj_size(listOfIntegerVectors)
 ```
 
-However, when the `list_of_x` object is `serialized()` to a raw vector and restored via
-`unserialize()`, the elements of the stored object \strong{do not} share a common target
-as indicated by the different memory address of each element.
+When the `listOfIntegerVectors` is serialized to a raw vector and restored, the elements of the restored object no longer share a common memory address. Also note that the raw vector is approximately 3 times the size of `integerVector` indicating that 3 copies of the vector have been saved.
 
 ```{r}
-restored_list_of_x <-
-  unserialize(serialize(list_of_x, connection = NULL))
+serializedListOfIntegerVectors <-
+  serialize(listOfIntegerVectors, connection = NULL)
 
-pryr::inspect(restored_list_of_x)
+obj_size(serializedListOfIntegerVectors)
 
-identical(list_of_x, restored_list_of_x)
+restoredListOfIntegerVectors <-
+  unserialize(serializedListOfIntegerVectors)
+
+sxp(restoredListOfIntegerVectors)
 ```
 
-Therefore, we now have three copies of `x` in memory for the `restored_list_of_x`.
+But now the list contains three copies of `integerVector` in memory for the `restoredListOfIntegerVectors`. We can see that the restored list object consumes increased memory compared to the original.
 
 ```{r}
-pryr::object_size(x)
+obj_size(integerVector)
 
-pryr::object_size(list_of_x)
-## 80 B for list structure
+obj_size(listOfIntegerVectors)
+# Bytes of integerVector + 80 B list structure
 
-pryr::object_size(restored_list_of_x)
-## 3 * bytes of x + 80 B list structure
+obj_size(restoredListOfIntegerVectors)
+# 3 * bytes of integerVector + 80 B list structure
 ```
 
-Using `pickleR` we can serialize and deserialize objects while maintaining the
-internal references to common values.
+## PickleR serialize of simple objects
+
+When the `listOfIntegerVectors` is _pickled_ to a raw vector and restored, the elements of the restored object continue to share a common memory address. Also note that the raw vector is of approximately equal size of `integerVector` indicating that only one copy of the vector have been saved.
 
 ```{r}
 library(pickleR)
 
-pickleR_restored_list_of_x <-
-  unpickle(pickle(list_of_x, connection = NULL))
+pickledListOfIntegerVectors <-
+  pickle(listOfIntegerVectors, connection = NULL)
 
-pryr::inspect(pickleR_restored_list_of_x)
+obj_size(pickledListOfIntegerVectors)
 
-identical(list_of_x, pickleR_restored_list_of_x)
+unpickledListOfIntegerVectors <-
+  unpickle(pickledListOfIntegerVectors)
+
+sxp(unpickledListOfIntegerVectors)
 ```
 
-Therefore, using `pickle` and `unpickle` we only have a single copy of `x` in
-memory for the `pickle_restored_list_of_x`.
+But now the list contains three copies of `integerVector` in memory for the `unpickledListOfIntegerVectors`. We can see that the restored list object consumes increased memory compared to the original.
 
 ```{r}
-pryr::object_size(pickleR_restored_list_of_x)
+obj_size(integerVector)
+
+obj_size(listOfIntegerVectors)
+# Bytes of integerVector + 80 B list structure
+
+obj_size(unpickledListOfIntegerVectors)
+# Bytes of integerVector + 80 B list structure
 ```
 
-The above example demostrates the `base::` (de-)serialization method does not 
-maintain the references to shared objects, but in this case the impact is minimal.
-As the objects become increasingly complex or nested, the impact increases. Suppose
-we are working with R6 classes, the instances of that object recieve references to the
-function bodies from the R6 class generator.
+## Serialization of complex objects
+
+The loss of shared memory addresses in simple objects is not really a big problem. If a user alters a value in the `integerVector` R's copy-on-modify semantics would create a new vector with a new memory address and other 
+elements would not receive that alteration anyway.
+
+```{r}
+listOfIntegerVectors[[1]][1] <- 5L
+
+listOfIntegerVectors[[1]][1]
+
+listOfIntegerVectors[[2]][1]
+
+listOfIntegerVectors[[3]][1]
+
+sxp(listOfIntegerVectors)
+```
+
+A more interesting problem is seen with nested, recursive and self-referencing environments as can be created in the `R6` package.
+
+Suppose we have `R6` classes where circular referencing exists:
 
 ```{r}
 library(R6)
 
-classA <-
+child <-
   R6Class(
-    classname = "classA",
+    classname = "child",
     class = TRUE,
     cloneable = TRUE,
-    public = list(normalValue = rnorm(1),
+    public = list(
+      parent = NULL,
+      initialize = function(parent = NULL, ...) {
+        self$parent = parent
+      },
+      normalValue = rnorm(1),
                   uniformValue = runif(1),
                   normalRange = function(mean, sd, n = 10) {
                     return(rnorm(n = n, mean = mean, sd = sd))
@@ -106,84 +144,93 @@ classA <-
                   })
   )
 
-instance_of_classA <-
-  classA$new()
-
-pryr::object_size(instance_of_classA)
-
-pryr::inspect(instance_of_classA$normalRange)[["children"]][["body"]][["address"]]
-
-second_instance_of_classA <-
-  classA$new()
-
-pryr::inspect(second_instance_of_classA$normalRange)[["children"]][["body"]][["address"]]
+parent <- 
+  R6Class(
+    classname = "parent",
+    class = TRUE,
+    cloneable = TRUE,
+    public = list(
+      children = list(),
+      value = 1,
+      initialize = function(...) {
+        self$children <- lapply(1:5, function(i) {
+          return(child$new(parent = self))
+        })
+      }
+    )
+  )
 ```
 
-An R6 class instance can be serialized() to a raw vector and restored via unserialize(),
-however this serializes the entire instance object including function bodies, creating new
-copies of the function bodies for each reference.
+In this case the `parent` class has 5 `child` instances stored in a list (_has-a_ association). Each child class contains a reference to it the `parent` class that created it.
+
+If we create an instance of the parent class and examine it:
 
 ```{r}
-restored_instance_of_classA <-
-  unserialize(serialize(instance_of_classA, connection = NULL))
+instance1 <- parent$new()
 
+obj_addr(instance1)
 
-pryr::object_size(restored_instance_of_classA)
-
-pryr::inspect(restored_instance_of_classA$normalRange)[["children"]][["body"]][["address"]]
-
+obj_size(instance1)
 ```
 
-Using pickleR we serialize and unserialize the state of the instance, not the
-instance itself. 
+And then extract and examine the `parent` object stored within each `child`
 
 ```{r}
-
-pickleR_restored_instance_of_classA <-
-    unpickle(pickle(instance_of_classA, connection = NULL))
-
-pryr::object_size(pickleR_restored_instance_of_classA)
-
-pryr::inspect(pickleR_restored_instance_of_classA$normalRange)[["children"]][["body"]][["address"]]
+obj_addrs(lapply(instance1$children, function(child) {child$parent}))
 ```
 
-The 'pickle' information contains the state of the instance, its class and the
-namespace where the class generator is defined. The 'unpickle' function,
-instantiates a new instance of the R6 class bypassing the `initialize()` call.
-Then uses the pickled state to set the instance fields. The restored instance
-recieve references to the function bodies from the R6 class generator, maintaining
-internal references and producing an instance of equal memory size to the original.
+Each child correctly references the same instance of the `parent` class.
 
-This example can be extended with a list of R6 instances:
+If we examine the body of a function in each child, we can see that they all reference the same object (from the class generator).
 
 ```{r}
-list_of_classA_instances <-
-  lapply(X = 1:10,
-         FUN = function(i) {
-           classA$new()
-         })
-
-pryr::object_size(list_of_classA_instances)
+obj_addrs(lapply(instance1$children, function(child) {
+  body(child$normalRange)
+}))
 ```
 
-Using the `base::` (de-)serialization method results in a list of objects each with
-its own function body definition.
+`R6` classes can be serialized and unserialized using the built-in methods, but the references are not preserved. Note that the restored `R6` object is approximately 4.3 times the size of the original.
 
 ```{r}
-restored_list_of_classA_instances <-
-  unserialize(serialize(list_of_classA_instances, connection = NULL))
+serializedR6Object <- 
+  serialize(instance1, connection = NULL)
 
-pryr::object_size(restored_list_of_classA_instances)
+obj_size(serializedR6Object)
 
+restoredR6Object <-
+  unserialize(serializedR6Object)
+
+obj_size(restoredR6Object)
+
+obj_addrs(lapply(restoredR6Object$children, function(child) {child$parent}))
 ```
 
-But using `pickleR`:
+In the restored `R6` object the function bodies are not inherited from the generator and point to different memory addresses.
 
 ```{r}
-pickleR_restored_list_of_classA_instances <-
-  unpickle(pickle(list_of_classA_instances, connection = NULL))
-
-pryr::object_size(pickleR_restored_list_of_classA_instances)
-
-
+obj_addrs(lapply(restoredR6Object$children, function(child) {
+  body(child$normalRange)
+}))
 ```
+
+With _pickleR_ this not the case. The function bodies of each child are shared references to a single object, however, this object is not the same as that from the generator. Of note, that the raw value of the pickled object is approximately half that of the serialized object, and the unpickled object is smaller than the original. The unpickled object is smaller because references to the source files for function definitions are stripped from function bodies in pickleR. This does not impact the objects functionality, but when viewing the function definition comments, etc will be lost.
+
+```{r}
+pickledR6Object <- 
+  pickle(instance1, connection = NULL)
+
+obj_size(pickledR6Object)
+
+unpickleddR6Object <-
+  unpickle(pickledR6Object)
+
+obj_size(unpickleddR6Object)
+
+obj_addrs(lapply(unpickleddR6Object$children, function(child) {child$parent}))
+
+obj_addrs(lapply(unpickleddR6Object$children, function(child) {
+  body(child$normalRange)
+}))
+```
+
+In significantly more complex systems with higher levels of class composition and recursion the effect of _pickleR_ vs the in-built `serialize` and `unserialize` can be dramatic.

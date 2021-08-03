@@ -18,4 +18,5 @@ RObject strip_src_refs(RObject object);
 RObject strip_object_attributes_ (RObject& object);
 SEXP get_binding_function_ (String name, Environment& environment);
 Rboolean is_binding_function_ (String name, Environment& environment);
+Rboolean is_environment_locked_ (Environment& environment);
 #endif // __PICKLEFUNS__

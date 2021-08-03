@@ -1,5 +1,6 @@
 #include <Rcpp.h>
 #include "pickle_funs.h"
+#include <Rinternals.h>
 using namespace Rcpp;
 
 
@@ -240,10 +241,13 @@ List pickle_tree_(RObject& object,
         }
       }
 
+      int environmentIsLocked = is_environment_locked_(objectAsEnvironment);
+
       return(List::create(_["objectLabel"] = objectLabel,
                           _["objectAddress"] = objectAddress,
                           _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses, requiredPackages),
                           _["parentEnv"] = parentEnvironmentPickleDefinition,
+                          _["environmentIsLocked"] = environmentIsLocked,
                           _["subObjects"] = pickledSubObjects,
                           _["Type"] = "pickleEnv"));
     }

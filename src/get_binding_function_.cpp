@@ -13,3 +13,8 @@ Rboolean is_binding_function_ (String name, Environment& environment) {
   SEXP env = environment;
   return(R_BindingIsActive(symbol, env));
 }
+
+Rboolean is_environment_locked_ (Environment& environment) {
+  SEXP env = environment;
+  return(R_EnvironmentIsLocked(env));
+}

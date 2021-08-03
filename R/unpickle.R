@@ -34,10 +34,12 @@ unpickle <-
 
     pickleDefinition <- unserialize(con)
 
+    #' @importFrom 'methods' 'is'
     if (!is(pickleDefinition, "pickleDefinition")) {
       stop("Specified connection does not contain a valid pickle definition")
     }
 
+    #' @importFrom 'utils' 'installed.packages'
     if (length(pickleDefinition[["requiredPackages"]])) {
       unavailablePackages <-
         !(pickleDefinition[["requiredPackages"]] %in% installed.packages()[, 1])
