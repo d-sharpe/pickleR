@@ -3,19 +3,19 @@
 using namespace Rcpp;
 
 List extract_object_attributes_ (RObject& object,
-                                 std::unordered_map<String, RObject>& seenObjects,
-                                 std::unordered_set<String>& seenAddresses,
-                                 std::unordered_set<String>& requiredPackages) {
+                                 std::unordered_map<std::string, RObject>& seenObjects,
+                                 std::unordered_set<std::string>& seenAddresses,
+                                 std::unordered_set<std::string>& requiredPackages) {
   // get attribute names
   CharacterVector objectAttributeNames = wrap(object.attributeNames());
   // get number of attributes
-  int numberOfObjectAttributes = objectAttributeNames.size();
+  int numberOfObjectAttributes = Rf_xlength(objectAttributeNames);
 
   // allocate list of length = number of attributes
   List objectAttributeList (numberOfObjectAttributes);
 
   // allocate for loop variables
-  String attributeName;
+  std::string attributeName;
   RObject attribute;
 
   for (int i = 0; i < numberOfObjectAttributes; i++) {

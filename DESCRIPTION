@@ -11,7 +11,7 @@ Depends:
     R (>= 4.0)
 Imports:
     methods,
-    Rcpp (>= 1.0.7),
+    Rcpp (>= 1.0.6),
     utils
 LinkingTo: Rcpp
 RoxygenNote: 7.1.1

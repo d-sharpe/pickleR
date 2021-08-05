@@ -8,19 +8,19 @@ RObject unpickle_ (List pickleDefinition) {
   List pickledObjects = pickleDefinition["objects"];
 
   // create unordered map to hold unique objects
-  std::unordered_map<String, RObject> availableObjects;
+  std::unordered_map<std::string, RObject> availableObjects;
 
   CharacterVector pickledObjectAddresses = pickledObjects.names();
 
   int numberOfObjects = pickledObjectAddresses.length();
 
-  String currentObjectAddress;
+  std::string currentObjectAddress;
   RObject currentObject;
   for (int i = 0; i < numberOfObjects; i++) {
 
     currentObjectAddress = pickledObjectAddresses[i];
     currentObject = pickledObjects[i];
-    availableObjects.insert(std::pair<String, RObject>(currentObjectAddress, currentObject));
+    availableObjects.insert(std::pair<std::string, RObject>(currentObjectAddress, currentObject));
   }
 
   List pickledObjectDefintion = pickleDefinition["pickleDefinition"];

@@ -4,7 +4,7 @@ using namespace Rcpp;
 
 void apply_object_attributes_(RObject& object,
                               List& attributes,
-                              std::unordered_map<String, RObject>& availableObjects,
+                              std::unordered_map<std::string, RObject>& availableObjects,
                               int depth) {
   // extract list of attributes
   List attributeListToApply = attributes["Attributes"];
@@ -15,7 +15,7 @@ void apply_object_attributes_(RObject& object,
   // only loop if there are attributes
   if (numberOfAttributes > 0) {
     // allocate attribute name
-    String attributeName;
+    std::string attributeName;
     // allocate attribute definition list i.e. a pickle definition
     List attributeDefinition;
 
@@ -23,7 +23,7 @@ void apply_object_attributes_(RObject& object,
 
       attributeDefinition = attributeListToApply[i];
 
-      attributeName = as<String>(attributeDefinition["objectLabel"]);
+      attributeName = as<std::string>(attributeDefinition["objectLabel"]);
       // unpickle the attribute and save to object
       object.attr(attributeName) = unpickle_tree_(attributeDefinition, availableObjects, depth + 1);
     }
@@ -32,7 +32,7 @@ void apply_object_attributes_(RObject& object,
 
 void apply_object_attributes_(List& object,
                               List& attributes,
-                              std::unordered_map<String, RObject>& availableObjects,
+                              std::unordered_map<std::string, RObject>& availableObjects,
                               int depth) {
   // extract list of attributes
   List attributeListToApply = attributes["Attributes"];
@@ -43,7 +43,7 @@ void apply_object_attributes_(List& object,
   // only loop if there are attributes
   if (numberOfAttributes > 0) {
     // allocate attribute name
-    String attributeName;
+    std::string attributeName;
     // allocate attribute definition list i.e. a pickle definition
     List attributeDefinition;
 
@@ -51,7 +51,7 @@ void apply_object_attributes_(List& object,
 
       attributeDefinition = attributeListToApply[i];
 
-      attributeName = as<String>(attributeDefinition["objectLabel"]);
+      attributeName = as<std::string>(attributeDefinition["objectLabel"]);
 
       // unpickle the attribute and save to object
       object.attr(attributeName) = unpickle_tree_(attributeDefinition, availableObjects, depth + 1);

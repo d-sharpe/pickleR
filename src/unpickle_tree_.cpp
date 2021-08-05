@@ -4,14 +4,14 @@
 using namespace Rcpp;
 
 RObject unpickle_tree_ (List& pickleDefinition,
-                        std::unordered_map<String, RObject>& availableObjects,
+                        std::unordered_map<std::string, RObject>& availableObjects,
                         int depth) {
   // allocate temp object and atribute list
   RObject object;
   List objectAttributes;
 
   // get type of pickle
-  String pickleType = pickleDefinition["Type"];
+  std::string pickleType = pickleDefinition["Type"];
 
   // if is pickle referring to a built-in R environment e.g. Global
   // return the environment
@@ -30,7 +30,7 @@ RObject unpickle_tree_ (List& pickleDefinition,
   // if us pickle referring to a installed package environment
   // return that package environment
   if (pickleType == "picklePackageEnv" || pickleType == "pickleNamespaceEnv") {
-    String namespaceName = pickleDefinition["Namespace"];
+    std::string namespaceName = pickleDefinition["Namespace"];
     Environment packageEnv = Environment::namespace_env(namespaceName);
 
     return(as<RObject>(packageEnv));
@@ -48,8 +48,8 @@ RObject unpickle_tree_ (List& pickleDefinition,
     return(object);
   }
 
-  String objectAddress = pickleDefinition["objectAddress"];
-  String objectLabel = pickleDefinition["objectLabel"];
+  std::string objectAddress = pickleDefinition["objectAddress"];
+  std::string objectLabel = pickleDefinition["objectLabel"];
 
   // if is a pickle then extract object from map of available objects
   if (pickleType == "pickle") {
@@ -92,7 +92,7 @@ RObject unpickle_tree_ (List& pickleDefinition,
       apply_object_attributes_(subObjects, objectAttributes, availableObjects, depth + 1);
 
       // store in list of available objects
-      availableObjects.insert(std::pair<String, RObject>(objectAddress, subObjects));
+      availableObjects.insert(std::pair<std::string, RObject>(objectAddress, subObjects));
 
       // return list of objects
       return(subObjects);
@@ -105,7 +105,7 @@ RObject unpickle_tree_ (List& pickleDefinition,
       apply_object_attributes_(subObjects, objectAttributes, availableObjects, depth + 1);
 
       // store in list of available objects
-      availableObjects.insert(std::pair<String, RObject>(objectAddress, subObjects));
+      availableObjects.insert(std::pair<std::string, RObject>(objectAddress, subObjects));
 
       // return list of objects
       return(subObjects);
@@ -120,7 +120,7 @@ RObject unpickle_tree_ (List& pickleDefinition,
     List functionEnvInfo = pickleDefinition["objectEnvironment"];
 
     // get the type of the pickled enclosing environment
-    String functionEnvironmentPickleType = functionEnvInfo["Type"];
+    std::string functionEnvironmentPickleType = functionEnvInfo["Type"];
 
     // allocate function
     RObject functionEnv;
@@ -150,9 +150,9 @@ RObject unpickle_tree_ (List& pickleDefinition,
       functionEnv = new_env(parentEnv);
 
       // get address of enclosing enviroment and save env to list of available objects
-      String functionEnvironmentAddress = functionEnvInfo["objectAddress"];
+      std::string functionEnvironmentAddress = functionEnvInfo["objectAddress"];
 
-      availableObjects.insert(std::pair<String, RObject>(functionEnvironmentAddress, functionEnv));
+      availableObjects.insert(std::pair<std::string, RObject>(functionEnvironmentAddress, functionEnv));
     } else {
 
       // if the enclosing env is a pickle reference of build-in R environment
@@ -181,7 +181,7 @@ RObject unpickle_tree_ (List& pickleDefinition,
     apply_object_attributes_(object, objectAttributes, availableObjects, depth + 1);
 
     // save function to list of available objects
-    availableObjects.insert(std::pair<String, RObject>(objectAddress, unpickledFunction));
+    availableObjects.insert(std::pair<std::string, RObject>(objectAddress, unpickledFunction));
 
     // if post populate add elements of enclosing environment to it (object passed by ref so will
     // update in available objects list)
@@ -216,14 +216,14 @@ RObject unpickle_tree_ (List& pickleDefinition,
     objectAttributes = pickleDefinition["objectAttributes"];
 
     // save env to list of available objects
-    availableObjects.insert(std::pair<String, RObject>(objectAddress, pickledEnv));
+    availableObjects.insert(std::pair<std::string, RObject>(objectAddress, pickledEnv));
 
     // get elements of environment
     List subobjectDefinitions = pickleDefinition["subObjects"];
 
     List subObjectDefinition, bindingFunctionDefinition;
-    String subObjectType;
-    String subObjectName;
+    std::string subObjectType;
+    std::string subObjectName;
     SEXP bindingFunction;
 
     // loop through elements
@@ -232,7 +232,7 @@ RObject unpickle_tree_ (List& pickleDefinition,
 
       subObjectDefinition = *subObjectDef;
 
-      subObjectType = as<String>(subObjectDefinition["Type"]);
+      subObjectType = as<std::string>(subObjectDefinition["Type"]);
 
       // if the element is an active binding
       if (subObjectType == "pickleEnvActiveBinding") {
@@ -240,7 +240,7 @@ RObject unpickle_tree_ (List& pickleDefinition,
         // get the function definition
         bindingFunctionDefinition = subObjectDefinition["FunctionDefinition"];
 
-        subObjectName = as<String>(bindingFunctionDefinition["objectLabel"]);
+        subObjectName = as<std::string>(bindingFunctionDefinition["objectLabel"]);
 
         // unpickle the function definition
         bindingFunction = unpickle_tree_(bindingFunctionDefinition, availableObjects, depth + 1);
@@ -254,7 +254,7 @@ RObject unpickle_tree_ (List& pickleDefinition,
 
         // if element is a value unpickle and assign in environment
 
-        subObjectName = as<String>(subObjectDefinition["objectLabel"]);
+        subObjectName = as<std::string>(subObjectDefinition["objectLabel"]);
 
         pickledEnv.assign(subObjectName, unpickle_tree_(subObjectDefinition, availableObjects, depth + 1));
       }

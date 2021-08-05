@@ -13,9 +13,9 @@ RObject strip_object_attributes_ (RObject& object) {
   // get remaining attribute names
   CharacterVector objectAttributeNames = wrap(shalDuplicateObject.attributeNames());
 
-  int numberOfObjectAttributes = objectAttributeNames.size();
+  int numberOfObjectAttributes = Rf_xlength(objectAttributeNames);
 
-  String attributeName;
+  std::string attributeName;
 
   // loop through attributes and make null
   for (int i = 0; i < numberOfObjectAttributes; i++) {

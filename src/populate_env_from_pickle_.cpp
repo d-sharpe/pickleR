@@ -5,7 +5,7 @@ using namespace Rcpp;
 
 void populate_env_from_pickle_(RObject& environment,
                                List& pickleDefinition,
-                               std::unordered_map<String, RObject>& availableObjects,
+                               std::unordered_map<std::string, RObject>& availableObjects,
                                int depth) {
 
   // convert object to an environment
@@ -16,7 +16,7 @@ void populate_env_from_pickle_(RObject& environment,
 
   // allocate the loop variables
   List subObjectDefinition, bindingFunctionDefinition;
-  String subObjectType, subObjectName;
+  std::string subObjectType, subObjectName;
   SEXP bindingFunction;
 
   for (List::iterator subObjectDef = subobjectDefinitions.begin();
@@ -24,7 +24,7 @@ void populate_env_from_pickle_(RObject& environment,
 
     subObjectDefinition = *subObjectDef;
 
-    subObjectType = as<String>(subObjectDefinition["Type"]);
+    subObjectType = as<std::string>(subObjectDefinition["Type"]);
 
     // if the type of the sub object is an active binding
     if (subObjectType == "pickleEnvActiveBinding") {
@@ -32,7 +32,7 @@ void populate_env_from_pickle_(RObject& environment,
       // get the definition of the bound function
       bindingFunctionDefinition = subObjectDefinition["FunctionDefinition"];
 
-      subObjectName = as<String>(bindingFunctionDefinition["objectLabel"]);
+      subObjectName = as<std::string>(bindingFunctionDefinition["objectLabel"]);
 
       // unpickle the function
       bindingFunction = unpickle_tree_(bindingFunctionDefinition, availableObjects, depth + 1);
@@ -45,7 +45,7 @@ void populate_env_from_pickle_(RObject& environment,
     } else {
 
       // if subobject is a value unpickle and assign
-      subObjectName = as<String>(subObjectDefinition["objectLabel"]);
+      subObjectName = as<std::string>(subObjectDefinition["objectLabel"]);
 
       envToPopulate.assign(subObjectName, unpickle_tree_(subObjectDefinition, availableObjects, depth + 1));
     }

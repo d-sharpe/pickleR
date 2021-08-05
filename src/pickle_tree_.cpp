@@ -5,16 +5,18 @@ using namespace Rcpp;
 
 
 List pickle_tree_(RObject& object,
-                  String objectLabel,
-                  std::unordered_map<String, RObject>& seenObjects,
-                  std::unordered_set<String>& seenAddresses,
-                  std::unordered_set<String>& requiredPackages,
+                  std::string objectLabel,
+                  std::unordered_map<std::string, RObject>& seenObjects,
+                  std::unordered_set<std::string>& seenAddresses,
+                  std::unordered_set<std::string>& requiredPackages,
                   int depth = 1) {
 
   RObject objectNoAttributes, shallowObjectCopy;
+  std::pair<std::string, RObject> objectPair;
 
   // grab object address
-  String objectAddress = object_address_(object);
+  std::string objectAddress = object_address_(object);
+
   // switch on type of SEXP object passed to function
   switch(TYPEOF(object)) {
   // if object is R NULL
@@ -39,8 +41,10 @@ List pickle_tree_(RObject& object,
                 // for reapplication during unpickle
                 objectNoAttributes = strip_object_attributes_(object);
 
+                objectPair = std::make_pair(objectAddress, objectNoAttributes);
+
                 // try insert object via address into unique object map
-                if (!seenObjects.insert(std::pair<String, RObject>(objectAddress, objectNoAttributes)).second) {
+                if (!seenObjects.insert(objectPair).second) {
                   // return a pickleReference to existing object in map
                   return(List::create(_["objectLabel"] = objectLabel,
                                       _["objectAddress"] = objectAddress,
@@ -74,11 +78,11 @@ List pickle_tree_(RObject& object,
       List pickledSubObjects (listObjectLength);
 
       // allocate vector for list names
-      CharacterVector listObjectNames(listObjectLength);
+      std::vector<std::string> listObjectNames(listObjectLength);
 
       // if list has names retrieve
       if (object.hasAttribute("names")) {
-        listObjectNames = wrap(object.attr("names"));
+        listObjectNames = as<std::vector<std::string>>(object.attr("names"));
       }
 
       RObject listElement;
@@ -105,8 +109,11 @@ List pickle_tree_(RObject& object,
       // attributes will be saved as "pickleAttributes" on pickleDefiniton
       // for reapplication during unpickle
       objectNoAttributes = strip_object_attributes_(object);
+
+      objectPair = std::make_pair(objectAddress, objectNoAttributes);
+
       // try insert object via address into unique object map
-      if (!seenObjects.insert(std::pair<String, RObject>(objectAddress, objectNoAttributes)).second) {
+      if (!seenObjects.insert(objectPair).second) {
         // return a pickleReference to existing object in map
         return(List::create(_["objectLabel"] = objectLabel,
                             _["objectAddress"] = objectAddress,
@@ -125,8 +132,10 @@ List pickle_tree_(RObject& object,
         // attributes will be saved as "pickleAttributes" on pickleDefiniton
         // for reapplication during unpickle
         objectNoAttributes = strip_object_attributes_(object);
+        objectPair = std::make_pair(objectAddress, objectNoAttributes);
+
         // try insert object via address into unique object map
-        if (!seenObjects.insert(std::pair<String, RObject>(objectAddress, objectNoAttributes)).second) {
+        if (!seenObjects.insert(objectPair).second) {
           // return a pickleReference to existing object in map
           return(List::create(_["objectLabel"] = objectLabel,
                               _["objectAddress"] = objectAddress,
@@ -167,7 +176,7 @@ List pickle_tree_(RObject& object,
     // if the object is a package or namespace environment save a reference to
     // that environment
     if (R_IsPackageEnv(object)) {
-      String package_name = R_PackageEnvName(object);
+      std::string package_name = as<std::string>(R_PackageEnvName(object));
 
       requiredPackages.insert(package_name);
 
@@ -194,7 +203,6 @@ List pickle_tree_(RObject& object,
                           _["objectAddress"] = objectAddress,
                           _["Type"] = "pickleReference"));
     } else {
-
       // convert object to environment
       Environment objectAsEnvironment = as<Environment>(object);
 
@@ -214,7 +222,7 @@ List pickle_tree_(RObject& object,
       List pickledSubObjects (numberOfEnvironmentElements);
 
       // allocate element name, element value, and a activebinding pickle definition list for loop
-      String elementName;
+      std::string elementName;
       RObject environmentElement;
       List pickledActiveBindingEnvironmentElement;
 
@@ -224,14 +232,12 @@ List pickle_tree_(RObject& object,
 
         // if the element is not an active binding pickle the value
         if (!is_binding_function_(elementName, objectAsEnvironment)) {
-
           environmentElement = objectAsEnvironment.get(elementName);
 
           pickledSubObjects[i] = pickle_tree_(environmentElement, elementName, seenObjects, seenAddresses, requiredPackages, depth + 1);
         } else {
 
           // if the element is an active binding get the bound function definition and pickle that
-
           environmentElement = get_binding_function_(elementName, objectAsEnvironment);
 
           pickledActiveBindingEnvironmentElement = pickle_tree_(environmentElement, elementName, seenObjects, seenAddresses, requiredPackages, depth + 1);
@@ -289,8 +295,10 @@ List pickle_tree_(RObject& object,
     // for reapplication during unpickle
     objectNoAttributes = strip_object_attributes_(object);
 
+    objectPair = std::make_pair(objectAddress, objectNoAttributes);
+
     // try insert object via address into unique object map
-    if (!seenObjects.insert(std::pair<String, RObject>(objectAddress, objectNoAttributes)).second) {
+    if (!seenObjects.insert(objectPair).second) {
       // return a pickleReference to existing object in map
       return(List::create(_["objectLabel"] = objectLabel,
                           _["objectAddress"] = objectAddress,
@@ -317,7 +325,11 @@ List pickle_tree_(RObject& object,
     // try insert address of object into set of observed addresses
     // if already seen return a pickle reference and skip recursive
     // deconstruction of object
-    if (!seenObjects.insert(std::pair<String, RObject>(objectAddress, objectNoAttributes)).second) {
+
+    objectPair = std::make_pair(objectAddress, objectNoAttributes);
+
+    // try insert object via address into unique object map
+    if (!seenObjects.insert(objectPair).second) {
       return(List::create(_["objectLabel"] = objectLabel,
                           _["objectAddress"] = objectAddress,
                           _["Type"] = "pickleReference"));
