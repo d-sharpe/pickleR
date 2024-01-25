@@ -342,5 +342,5 @@ List pickle_tree_(RObject& object,
     }
   }
 
-  stop("Unable to pickle");
+  stop("Unable to pickle", objectLabel);
 }
