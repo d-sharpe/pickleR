@@ -10,7 +10,7 @@ List pickle_tree_(RObject& object,
                   std::unordered_set<std::string>& seenAddresses,
                   std::unordered_set<std::string>& requiredPackages,
                   int depth = 1) {
-  Rprintf( "object_label", objectLabel);
+  Rprintf( "object_label: %s\n", objectLabel);
   RObject objectNoAttributes, shallowObjectCopy;
   std::pair<std::string, RObject> objectPair;
 
