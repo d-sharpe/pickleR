@@ -268,14 +268,25 @@ RObject unpickle_tree_ (List& pickleDefinition,
       pickledEnv.lock();
     }
 
-    if (pickleDefinition)
-
     // convert environment to RObject and apply attributes
     object = as<RObject>(pickledEnv);
 
     apply_object_attributes_(object, objectAttributes, availableObjects, depth + 1);
 
     return(object);
+  }
+
+  // if is a pickleRaw, the object was stored using R's native serialize;
+  // recover it with base::unserialize
+  if (pickleType == "pickleRaw") {
+    RObject rawData = availableObjects[objectAddress];
+    Environment base = Environment::base_env();
+    Function unserializeFun = base["unserialize"];
+    object = unserializeFun(rawData);
+    // Replace the raw bytes with the reconstructed object so that any
+    // subsequent pickleReference to this address returns the right value.
+    availableObjects[objectAddress] = object;
+    return object;
   }
 
   // stop if encounter pickleType not known

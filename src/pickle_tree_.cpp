@@ -340,7 +340,28 @@ List pickle_tree_(RObject& object,
                           _["objectAttributes"] = extract_object_attributes_(object, seenObjects, seenAddresses, requiredPackages),
                           _["Type"] = "pickle"));
     }
-  }
+  default: {
+    // For any unhandled SEXP type (BUILTINSXP, SPECIALSXP, PROMSXP,
+    // EXTPTRSXP, WEAKREFSXP, DOTSXP, S4SXP, etc.) fall back to R's
+    // native serialize so the object survives the round-trip.
+    Environment base = Environment::base_env();
+    Function serializeFun = base["serialize"];
+    RObject serialized = serializeFun(object, R_NilValue);
 
-  stop("Unable to pickle");
-}
+    objectPair = std::make_pair(objectAddress, serialized);
+
+    if (!seenObjects.insert(objectPair).second) {
+      return(List::create(_["objectLabel"] = objectLabel,
+                          _["objectAddress"] = objectAddress,
+                          _["Type"] = "pickleReference"));
+    } else {
+      return(List::create(_["objectLabel"] = objectLabel,
+                          _["objectAddress"] = objectAddress,
+                          // Attributes are already embedded in the serialized raw bytes;
+                          // no separate attribute list is needed.
+                          _["objectAttributes"] = List::create(_["Attributes"] = List(),
+                                                               _["Type"] = "pickleAttributeList"),
+                          _["Type"] = "pickleRaw"));
+    }
+  }
+  }

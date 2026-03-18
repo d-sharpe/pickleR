@@ -15,7 +15,6 @@ unpickle <-
       if (!file.exists(connection)) {
         stop("Specified file does not exist: ", connection)
       }
-      file.info(connection)
 
       con <- gzfile(connection, "rb", ...)
       on.exit({
@@ -39,10 +38,12 @@ unpickle <-
       stop("Specified connection does not contain a valid pickle definition")
     }
 
-    #' @importFrom 'utils' 'installed.packages'
     if (length(pickleDefinition[["requiredPackages"]])) {
-      unavailablePackages <-
-        !(pickleDefinition[["requiredPackages"]] %in% installed.packages()[, 1])
+      unavailablePackages <- vapply(
+        pickleDefinition[["requiredPackages"]],
+        function(pkg) length(find.package(pkg, quiet = TRUE)) == 0L,
+        logical(1L)
+      )
 
       if (any(unavailablePackages)) {
         stop(
