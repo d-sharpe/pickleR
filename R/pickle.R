@@ -43,14 +43,27 @@ pickle <-
 
       # pickle the object and serialize the output result to the connection. If
       # connection is null, raw vector returned
-      serialize(object = pickle_(object),
-                connection = con,
-                xdr = FALSE,
-                ascii = FALSE)
+      result <- serialize(object = pickle_(object),
+                          connection = con,
+                          xdr = FALSE,
+                          ascii = FALSE)
     } else {
-      serialize(object = pickle_(object),
-                connection = NULL,
-                xdr = FALSE,
-                ascii = FALSE)
+      result <- serialize(object = pickle_(object),
+                          connection = NULL,
+                          xdr = FALSE,
+                          ascii = FALSE)
     }
+
+    # invoke the global callback (best effort – warn on error, never stop)
+    cb <- get_pickle_callback()
+    if (!is.null(cb)) {
+      tryCatch(
+        cb(object),
+        error = function(e) {
+          warning("pickle callback error: ", conditionMessage(e), call. = FALSE)
+        }
+      )
+    }
+
+    result
   }
